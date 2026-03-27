@@ -1,0 +1,10 @@
+numpy
+pandas
+pymongo
+xgboost
+streamlit
+joblib
+scikit-learn
+altair
+flask
+plotly
