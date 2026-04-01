@@ -30,3 +30,16 @@ The system respects the following environment variables:
 2. Run `python real_time_engine_telemetry.py` to begin the data stream.
 3. Run `python app.py` to start the command center API.
 4. Access the UI at **[http://localhost:8001](http://localhost:8001)**.
+
+## Cloud Deployment (Render.com)
+1. Push this project to a **GitHub Repository**.
+2. Create a "Blueprint" on **[Render.com](https://render.com)** and connect your repo.
+3. Configure the `MONGODB_URI` environment variable with your **MongoDB Atlas** connection string.
+4. Your shareable link will be generated automatically!
+
+### Connecting your Local Simulator
+Once your app is live, you can send data to it from your local machine by running:
+```powershell
+$env:MONGODB_URI="your_atlas_connection_string"; python real_time_engine_telemetry.py
+```
+This ensures your cloud dashboard shows live data!

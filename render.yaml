@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: nexus-command-center
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app
+    envVars:
+      - key: PORT
+        value: 8001
+      - key: MONGODB_URI
+        sync: false
+      - key: MONGODB_DB
+        value: engine_telemetry
+      - key: WARNING_THRESHOLD
+        value: 0.5
+      - key: HIGH_RISK_THRESHOLD
+        value: 0.85
