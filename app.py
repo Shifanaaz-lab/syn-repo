@@ -26,19 +26,23 @@ def index():
 @app.route('/api/telemetry')
 def api_telemetry():
     try:
-        # 1. Fetch latest record for EVERY unique engine
-        engine_ids = coll.distinct("engine_id")
-        latest_records = []
-        for eid in engine_ids:
-            cursor = coll.find({"engine_id": int(eid)}).sort("timestamp", -1).limit(1)
-            docs = list(cursor)
-            if docs:
-                latest_records.append(docs[0])
+        # 1. Fetch latest record for EVERY unique engine using a single aggregation
+        pipeline = [
+            {"$sort": {"engine_id": 1, "timestamp": -1}},
+            {"$group": {
+                "_id": "$engine_id",
+                "latest_doc": {"$first": "$$ROOT"}
+            }},
+            {"$replaceRoot": {"newRoot": "$latest_doc"}},
+            {"$sort": {"engine_id": 1}}
+        ]
+        
+        latest_records = list(coll.aggregate(pipeline))
 
         if not latest_records:
             return jsonify({"status": "error", "message": "No data in MongoDB"})
             
-        # Convert ObjectId and fill dataframes
+        # Convert ObjectId and prepare DataFrame
         for rec in latest_records:
             if "_id" in rec:
                 rec["_id"] = str(rec["_id"])
@@ -61,14 +65,19 @@ def api_telemetry():
             alerts.append(f"[{ts_str}] {lvl}: Engine E-{int(row['engine_id']):03d} high risk ({row['failure_probability']:.2f})")
 
         # 3. UI Components (Grid, Bars, Telemetry)
+        # SPATIAL STABILITY: Grid always shows E-001 to E-012 in order
+        # Force numeric for sorting
+        df_latest["engine_id_num"] = pd.to_numeric(df_latest["engine_id"], errors='coerce')
+        df_grid = df_latest.sort_values(by="engine_id_num").head(12)
         engine_grid = []
-        for _, row in df_latest_sorted.head(12).iterrows():
+        for _, row in df_grid.iterrows():
             engine_grid.append({
                 "id": f"E-{int(row['engine_id']):03d}",
                 "rul": float(row.get('predicted_rul', 0)),
                 "risk": float(row.get('failure_probability', 0))
             })
             
+        # ATTENTION QUEUE: RUL Bars remain sorted by peak risk
         rul_bars = []
         for _, row in df_latest_sorted.head(8).iterrows():
             rul_bars.append({
@@ -152,5 +161,6 @@ def api_maintenance_history():
         return jsonify({"status": "error", "message": str(e), "trace": traceback.format_exc()})
 
 if __name__ == '__main__':
-    # Use 8001 to avoid potential ghost processes on 8000
-    app.run(debug=True, port=8001, host="0.0.0.0", use_reloader=False)
+    # Cloud-ready port handling (Render/Heroku use $PORT)
+    port = int(os.environ.get("PORT", 8001))
+    app.run(debug=False, port=port, host="0.0.0.0")

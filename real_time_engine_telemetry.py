@@ -14,7 +14,7 @@ import joblib
 
 ROLLING_WINDOW = 5
 NUM_ENGINES = 100
-BATCH_INTERVAL_SECONDS = 3
+BATCH_INTERVAL_SECONDS = 0.1
 
 # Absolute RUL-based failure and risk (tunable via env)
 FAILURE_RUL_THRESHOLD = float(os.getenv("FAILURE_RUL_THRESHOLD", "100"))   # RUL < this → engine failed, replace
@@ -261,7 +261,7 @@ class TelemetrySimulator:
         mongo_uri: str,
         mongo_db: str,
         expected_features: List[str] | None = None,
-        batch_interval_seconds: int = BATCH_INTERVAL_SECONDS,
+        batch_interval_seconds: float = BATCH_INTERVAL_SECONDS,
     ) -> None:
         self.rng = np.random.default_rng(seed=42)
         self.engines = [
@@ -295,7 +295,7 @@ class TelemetrySimulator:
         return batch_rows
 
     def run_forever(self) -> None:
-        print("Starting real‑time engine telemetry simulation...")
+        print("Starting real-time engine telemetry simulation...")
         batch_idx = 0
         while True:
             batch_idx += 1

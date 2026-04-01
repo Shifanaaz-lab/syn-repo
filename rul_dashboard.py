@@ -8,6 +8,7 @@ import streamlit as st
 from pymongo import MongoClient
 
 
+@st.cache_resource
 def get_mongo_client() -> MongoClient:
     uri = os.getenv("MONGODB_URI", "mongodb://localhost:27017/")
     return MongoClient(uri)
@@ -45,10 +46,9 @@ def load_predictions(
 def get_latest_per_engine(df: pd.DataFrame) -> pd.DataFrame:
     if df.empty:
         return df
-    # Latest timestamp per engine
-    df_sorted = df.sort_values(["engine_id", "timestamp"], ascending=[True, False])
-    latest = df_sorted.groupby("engine_id", as_index=False).first()
-    return latest
+    # Since df is already sorted by timestamp DESC from MongoDB,
+    # the first occurrence of each engine_id is the latest.
+    return df.drop_duplicates(subset="engine_id")
 
 
 def inject_dashboard_css() -> None:
@@ -264,7 +264,7 @@ def main() -> None:
     st.sidebar.divider()
 
     # Fixed auto-refresh interval
-    refresh_secs = int(os.getenv("DASHBOARD_REFRESH_SECS", "6"))
+    refresh_secs = float(os.getenv("DASHBOARD_REFRESH_SECS", "0.1"))
     if refresh_secs < 0:
         refresh_secs = 0
     if refresh_secs == 0:
@@ -276,7 +276,7 @@ def main() -> None:
     max_rows = st.sidebar.selectbox(
         "Max recent predictions to load",
         [1_000, 5_000, 10_000, 20_000, 50_000],
-        index=1,
+        index=0,
         format_func=lambda x: f"{x:,}",
     )
     st.sidebar.caption(
@@ -531,7 +531,7 @@ def main() -> None:
         st.markdown("<p style='font-family: Inter, sans-serif; color: #475569; font-size: 0.75rem;'>DATA STREAM PROVIDED BY MONGODB `live_predictions` CLUSTER</p>", unsafe_allow_html=True)
 
     if refresh_secs > 0:
-        @st.fragment(run_every=int(refresh_secs))
+        @st.fragment(run_every=refresh_secs)
         def auto_refresh_wrapper():
             render_dashboard()
             

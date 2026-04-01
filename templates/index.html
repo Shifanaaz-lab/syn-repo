@@ -102,6 +102,20 @@
         .audit-entry { font-family: 'Space Grotesk', monospace; font-size: 10px; padding: 6px 10px; border-left: 2px solid rgba(0,242,255,0.3); background: rgba(0,242,255,0.02); margin-bottom: 4px; }
         .audit-entry.audit-warn { border-color: rgba(255,159,28,0.5); background: rgba(255,159,28,0.03); }
         .audit-entry.audit-critical { border-color: rgba(255,0,122,0.5); background: rgba(255,0,122,0.03); }
+
+        /* Alert Pulsing */
+        @keyframes pulse-critical {
+            0% { box-shadow: 0 0 0 0 rgba(255, 0, 122, 0.4); border-color: rgba(255, 0, 122, 0.5); }
+            50% { box-shadow: 0 0 20px 5px rgba(255, 0, 122, 0.2); border-color: rgba(255, 0, 122, 1); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 0, 122, 0.4); border-color: rgba(255, 0, 122, 0.5); }
+        }
+        @keyframes pulse-warning {
+            0% { border-color: rgba(255, 159, 28, 0.3); }
+            50% { border-color: rgba(255, 159, 28, 0.8); }
+            100% { border-color: rgba(255, 159, 28, 0.3); }
+        }
+        .pulse-critical { animation: pulse-critical 1.5s infinite; background: rgba(255, 0, 122, 0.05) !important; }
+        .pulse-warning { animation: pulse-warning 2s infinite; }
     </style>
 </head>
 <body class="flex h-screen overflow-hidden">
@@ -344,7 +358,7 @@
 
     <script>
         // ── Live system state ──────────────────────────────────────────────────
-        let pollInterval = 6000;       // ms — actual dashboard poll interval
+        let pollInterval = 100;        // ms — actual dashboard poll interval
         let pollTimer = null;
         let warnThreshold = 0.50;      // live warning threshold
         let critThreshold = 0.85;      // live critical threshold
@@ -546,7 +560,7 @@
                     const isCrit = e.risk > critThreshold;
                     const isWarn = !isCrit && e.risk > warnThreshold;
                     const statusTxt = isCrit ? 'CRITICAL' : isWarn ? 'WARNING' : 'NOMINAL';
-                    const borderCls = isCrit ? 'border-rose-alert animate-pulse' : isWarn ? 'border-orange-warn' : '';
+                    const borderCls = isCrit ? 'pulse-critical' : isWarn ? 'pulse-warning' : '';
                     const textCls   = isCrit ? 'text-rose-alert' : isWarn ? 'text-orange-warn' : 'text-cyan-glow';
                     const detail = [
                         `Engine ID: ${e.id}`,
@@ -556,9 +570,9 @@
                         `Warn Threshold: > ${warnThreshold.toFixed(2)}`,
                         `Crit Threshold: > ${critThreshold.toFixed(2)}`
                     ].join('\\n');
-                    return `<div onclick="showModal('ASSET REPORT: ${e.id}', '${detail}')" class="engine-box ${borderCls}">
-                        <p class="text-[8px] font-bold ${textCls}">${e.id}</p>
-                        <p class="text-[9px] text-white font-bold">${e.rul.toFixed(0)} cyc</p>
+                    return `<div onclick="showModal('ASSET REPORT: ${e.id}', '${detail}')" class="engine-box ${borderCls} flex flex-col justify-between h-14">
+                        <p class="text-[8px] font-bold ${textCls} tracking-tighter">${e.id}</p>
+                        <p class="text-[10px] text-white font-bold leading-none">${e.rul.toFixed(0)} <span class="text-[7px] text-slate-500 uppercase font-normal">cyc</span></p>
                     </div>`;
                 }).join('');
 
