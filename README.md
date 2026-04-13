@@ -7,12 +7,12 @@
 
 ## 🧠 Overview
 
-The **NEXUS Command Center** is an advanced predictive maintenance platform designed to:
+The **NEXUS - AI-Powered Real-Time Predictive Maintenance System for Industrial Equipment** is a professional-grade predictive maintenance platform optimized for **High-Fidelity Human-Computer Interaction (HCI)**. It is designed to:
 
-* 📡 Simulate real-time engine telemetry
-* 🧠 Predict Remaining Useful Life (RUL) using XGBoost
-* ⚠️ Detect high-risk engines proactively
-* 📊 Provide a mission-control style monitoring dashboard
+* 📡 **10Hz Real-Time Streaming**: High-fidelity data sync every **100ms (0.1s)** for sub-second telemetry ingestion and UI updates.
+* 🧠 **Spatial Stability**: A "fixed-parking-spot" status grid that prevents visual skipping even during rapid 10Hz updates.
+* 🚨 **High-Fidelity Signaling**: Rhythmic alert pulsing for critical assets, synchronized at the millisecond-level with the AI risk engine.
+* ☁️ **Cloud Scale**: Fully ready for deployment to **Render.com** with **MongoDB Atlas** for 24/7 global access.
 
 This system mimics **industrial-grade monitoring environments**, enabling intelligent decision-making for maintenance operations.
 
@@ -21,19 +21,17 @@ This system mimics **industrial-grade monitoring environments**, enabling intell
 ## 🏗️ System Architecture
 
 ```text
-Telemetry Simulation
+Telemetry Simulation (10Hz)
         ↓
-Feature Engineering
+Feature Engineering (Rolling Windows)
         ↓
-XGBoost RUL Model
+XGBoost RUL Predictor
         ↓
-Prediction Engine
+MongoDB Atlas (Cloud Data Sink)
         ↓
-MongoDB (Live Data Stream)
+Flask Industrial API
         ↓
-Flask API
-        ↓
-Cyberpunk Dashboard UI
+HCI-Optimized Command Dashboard
 ```
 
 ---
@@ -76,8 +74,9 @@ Cyberpunk Dashboard UI
 
 ### ⚡ Real-Time Monitoring
 
-* Updates every **6 seconds**
-* No page refresh required
+* **10Hz Synchronization**: Sub-second polling (100ms) for critical assets.
+* **Spatially Stable Grid**: Engines remain fixed in position, allowing operators to "muscle-remember" asset locations.
+* **Pulse Signaling**: Visual "breathing" alerts for engines with >0.85 failure probability.
 
 ---
 

@@ -8,15 +8,15 @@ This document explains the **architecture**, **data flow**, and **logic** of the
 
 ```mermaid
 graph TD
-    A[Telemetry Simulator] -->|Cycles sensors + XGBoost| B[(MongoDB)]
-    B -->|Latest Engine States| C[Flask Backend (Port 8001)]
-    C -->|JSON API /api/telemetry| D[Vanilla JS Frontend]
-    D -->|Real-Time DOM Updates| E[User View]
+    A[Telemetry Simulator (10Hz)] -->|Batched sensor drift + XGBoost| B[(MongoDB Atlas)]
+    B -->|High-Speed Aggregation| C[Flask Industrial API]
+    C -->|sub-100ms JSON stream| D[Command Center UI]
+    D -->|Spatially Stable DOM| E[Operator Console]
 ```
 
-- **Simulator** (`real_time_engine_telemetry.py`): Simulates 100 engines. Every 3 seconds, it generates synthetic sensor data, engineering features, and running an XGBoost model to predict **Remaining Useful Life (RUL)**.
-- **Backend API** (`app.py`): A high-performance Flask server running on **Port 8001** that fetches unique engine records from MongoDB and formats them for the dashboard.
-- **Frontend** (`templates/index.html`): A "Mission Control" themed dashboard built with Vanilla JavaScript and Tailwind CSS, polling the backend every 6 seconds.
+- **Simulator** (`real_time_engine_telemetry.py`): Simulates a fleet of 100 aero-engines. Generates 10 batches per second (10Hz) to represent real-world high-frequency sensor intake.
+- **Backend API** (`app.py`): Uses optimized MongoDB aggregations to fetch the latest state of all 100 engines in a single efficient call.
+- **Frontend** (`templates/index.html`): Implements **Spatial Stability** and **Ultra-Fast Polling (100ms)**. Unlike consumer dashboards that "re-sort" and jump, NEXUS locks assets to a fixed grid (E-001 to E-012) while updating their risk levels every 0.1s in place.
 
 ---
 
@@ -48,8 +48,8 @@ The "Maintenance Schedule" component uses a multi-tier selection algorithm:
 
 ## 4. Visual Execution (UI/UX)
 - **SOC Command Center Palette**: Deep Navy, Black, and Cyan-glow. 
-- **Micro-Animations**: Real-time ticker clocks (HH:MM:SS) beside risk bands indicate live connection health.
-- **Isolated Syncing**: Each dashboard component (KPIs, Charts, Logs, Maintenance) is updated via isolated JS loops to prevent a single component error from crashing the entire system.
+- **Spatial Consistency**: The core asset grid maintains a constant sort order. This is a critical HCI feature for industrial operators who monitor specific assets visually over long shifts.
+- **High-Fidelity Pulse**: Critical states trigger CSS `@keyframes` pulsing rather than static color changes, increasing the "conspicuousness" of risks without cluttering the UI.
 
 ---
 

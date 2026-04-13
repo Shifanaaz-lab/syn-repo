@@ -3,12 +3,14 @@
 This document provides the operational reference for the NEXUS Industrial Aero-Tech Command Center.
 
 ## System Architecture
-- **Backend**: Flask engine on **Port 8001**.
-- **Data Source**: MongoDB `live_predictions` collection (populated by `real_time_engine_telemetry.py`).
-- **Frontend**: Vanilla JavaScript with Tailwind CSS / SOC Navy theme.
+- **Backend**: Flask engine on **Port 8001** (Cloud-ready).
+- **Data Source**: MongoDB Atlas `live_predictions` collection.
+- **Interface**: Spatially-stable asset grid with **10Hz (0.1s)** telemetry sync.
 
 ## High-Fidelity Features
-### 1. Unified Risk Monitoring
+### 1. Ultra-Low Latency Sync (0.1s)
+The system is factory-tuned to poll MongoDB every **100 milliseconds**. This provides a smooth, "always-on" visual experience that matches real-world aero-telemetry stream rates. Operators can adjust this via the **Settings** tab if network bandwidth is limited.
+
 The **Risk Alerts** KPI and the **Alerts Tab** are perfectly synchronized. Any engine with a `failure_probability` > 0.5 is logged as a WARNING, and > 0.85 as CRITICAL.
 
 ### 2. Intelligent Maintenance Schedule
@@ -16,8 +18,11 @@ The **Risk Alerts** KPI and the **Alerts Tab** are perfectly synchronized. Any e
 - **Upcoming Overhauls**: Proactively identifies engines with the **lowest Remaining Useful Life (RUL)** across the rest of the fleet.
 - **Unique Selection**: Engines are filtered to ensure the "Immediate" engine does not duplicate in the "Upcoming" list, providing higher fleet visibility.
 
-### 3. Fleet Health Distribution (Live)
-Interactive Plotly charts show the distribution of RUL across the fleet, allowing operators to see broad health trends at a glance.
+### 3. Spatial Anchor Asset Grid (HCI)
+The primary monitor shows engines E-001 through E-012 in a **Fixed Position Grid**. This allows for "eyes-free" monitoring once the operator is familiar with engine placement.
+
+### 4. Critical Signal Pulsing
+Engines with >0.85 risk probability will visually "pulse" on the dashboard. This is an intentional design choice to break human visual adaptations (preventing operators from ignoring "static" red flags).
 
 ## Configuration
 The system respects the following environment variables:

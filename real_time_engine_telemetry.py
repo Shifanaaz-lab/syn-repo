@@ -12,7 +12,9 @@ from xgboost import XGBRegressor
 import joblib
 
 
-ROLLING_WINDOW = 5
+ROLLING_WINDOW = 15  # Increased for smoother EMA/SMA
+EMA_ALPHA = 0.2     # Smoother weighting for recent data
+MAX_RUL_CAP = 125   # Piecewise RUL limit (industry standard)
 NUM_ENGINES = 100
 BATCH_INTERVAL_SECONDS = 0.1
 
@@ -93,36 +95,55 @@ class FeatureEngineer:
         for i, s_name in enumerate(self.SENSOR_COLS):
             series = hist[:, i] if hist.shape[0] > 0 else np.array([], dtype=float)
 
-            # rolling mean/std
+            # rolling mean/std (SMA)
             if series.size >= 1:
                 w = min(self.window, series.size)
                 window_vals = series[-w:]
                 features[f"{s_name}_roll_mean"] = float(window_vals.mean())
                 features[f"{s_name}_roll_std"] = float(window_vals.std(ddof=0))
+                
+                # Distribution shape features (industrial standard)
+                if series.size >= 4:
+                    pd_series = pd.Series(window_vals)
+                    features[f"{s_name}_skew"] = float(pd_series.skew())
+                    features[f"{s_name}_kurtosis"] = float(pd_series.kurt())
+                else:
+                    features[f"{s_name}_skew"] = 0.0
+                    features[f"{s_name}_kurtosis"] = 0.0
+
+                # EMA Filtering (New industrial-grade signal)
+                ema_val = series[0]
+                for val in series[1:]:
+                    ema_val = EMA_ALPHA * val + (1 - EMA_ALPHA) * ema_val
+                features[f"{s_name}_ema"] = float(ema_val)
             else:
                 features[f"{s_name}_roll_mean"] = 0.0
                 features[f"{s_name}_roll_std"] = 0.0
+                features[f"{s_name}_skew"] = 0.0
+                features[f"{s_name}_kurtosis"] = 0.0
+                features[f"{s_name}_ema"] = 0.0
 
             # lags
             features[f"{s_name}_lag1"] = float(series[-1]) if series.size >= 1 else 0.0
             features[f"{s_name}_lag2"] = float(series[-2]) if series.size >= 2 else 0.0
 
-            # change
+            # change & accel
             features[f"{s_name}_change"] = float(current_sensors[i] - features[f"{s_name}_lag1"])
+            features[f"{s_name}_accel"] = features[f"{s_name}_change"] - (features[f"{s_name}_lag1"] - features[f"{s_name}_lag2"])
 
             # trend (linear regression slope)
-            if series.size >= 2:
+            if series.size >= 3: # Need at least 3 points for stable trend
                 x = np.arange(series.size)
                 coeffs = np.polyfit(x, series, 1)
                 features[f"{s_name}_trend"] = float(coeffs[0])
             else:
                 features[f"{s_name}_trend"] = 0.0
 
-        # Health index: lower sensors => lower health; normalize by initial bases
+        # Health index upgrades: Use EMA values for health if available
+        current_ema_sum = sum(features[f"{s}_ema"] for s in self.SENSOR_COLS)
         base_sum = float(engine.base_sensors.sum())
-        current_sum = float(current_sensors.sum())
         if base_sum > 0:
-            health_index = current_sum / base_sum
+            health_index = current_ema_sum / base_sum
         else:
             health_index = 1.0
         features["health_index"] = float(np.clip(health_index, 0.0, 1.5))
@@ -130,6 +151,15 @@ class FeatureEngineer:
         # Life ratio: cycle relative to design life
         life_ratio = engine.cycle / max(engine.design_life, 1)
         features["life_ratio"] = float(np.clip(life_ratio, 0.0, 2.0))
+        
+        # Interactions
+        features["health_x_cycle"] = features["health_index"] * float(engine.cycle)
+        features["health_x_liferatio"] = features["health_index"] * features["life_ratio"]
+
+        # Fill NaNs from pandas stats operations if any
+        for k, v in features.items():
+            if np.isnan(v):
+                features[k] = 0.0
 
         return features
 
